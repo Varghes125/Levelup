@@ -184,6 +184,18 @@ export async function updateUserPreferences(
 }
 
 /**
+ * Update user time availability
+ * Replace this mock function with backend API call: PATCH /api/user/time
+ */
+export async function updateUserTimeAvailability(
+  minutes: number
+): Promise<{ success: boolean }> {
+  await delay(300);
+  console.log(`[API] Updated user time availability:`, minutes);
+  return { success: true };
+}
+
+/**
  * Get available domain options for onboarding
  * Replace this mock function with backend API call: GET /api/domains/available
  */
@@ -208,7 +220,7 @@ export async function getGeneralGrowthPathway(): Promise<Pathway> {
 export async function completeOnboarding(data: {
   name: string;
   selectedDomains: string[];
-  timeAvailability: "5min" | "10min" | "15min";
+  timeAvailability: number;
 }): Promise<{ success: boolean; user: User }> {
   await delay(500);
   console.log(`[API] Completing onboarding:`, data);

@@ -8,7 +8,7 @@
 export interface User {
   id: string;
   name: string;
-  timeAvailability: "5min" | "10min" | "15min";
+  timeAvailability: number;
   streak: number;
   xp: number;
   level: number;
@@ -100,7 +100,7 @@ export const availableDomains: DomainOption[] = [
 export const mockUser: User = {
   id: "user_1",
   name: "Haifa",
-  timeAvailability: "10min",
+  timeAvailability: 10,
   streak: 7,
   xp: 120,
   level: 2,

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock, Bell, Moon, ChevronRight, Star, Flame, Dumbbell, Users, Brain, Briefcase, Heart, Palette, Wallet, Leaf, Sparkles } from "lucide-react";
+import { Clock, Bell, Moon, Star, Flame, Dumbbell, Users, Brain, Briefcase, Heart, Palette, Wallet, Leaf, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { getUser, getUserDomains, updateUserPreferences } from "@/lib/api";
+import { getUser, getUserDomains, updateUserPreferences, updateUserTimeAvailability } from "@/lib/api";
 import type { User, Domain } from "@/lib/mock-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -29,6 +29,7 @@ export function ProfileScreen({ user: propUser }: ProfileScreenProps) {
   const [user, setUser] = useState<User | null>(propUser || null);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeValue, setTimeValue] = useState<number>(propUser?.timeAvailability ?? 10);
 
   useEffect(() => {
     async function loadData() {
@@ -39,6 +40,7 @@ export function ProfileScreen({ user: propUser }: ProfileScreenProps) {
         ]);
         setUser(userData);
         setDomains(domainsData);
+        setTimeValue(userData.timeAvailability ?? 10);
       } catch (error) {
         console.error("[v0] Error loading profile:", error);
       } finally {
@@ -108,11 +110,22 @@ export function ProfileScreen({ user: propUser }: ProfileScreenProps) {
     );
   }
 
-  const timeLabels: Record<string, string> = {
-    "5min": "5 minutes/day",
-    "10min": "10 minutes/day",
-    "15min": "15 minutes/day",
+  const handleTimeChange = async (minutes: number) => {
+    setTimeValue(minutes);
+    setUser((prev) =>
+      prev ? { ...prev, timeAvailability: minutes } : null
+    );
+    try {
+      await updateUserTimeAvailability(minutes);
+    } catch (error) {
+      console.error("[v0] Error updating time availability:", error);
+    }
   };
+
+  // Slider fill percentage for the gradient track
+  const sliderMin = 5;
+  const sliderMax = 60;
+  const sliderFillPct = ((timeValue - sliderMin) / (sliderMax - sliderMin)) * 100;
 
   // XP progress to next level
   const xpPerLevel = 100;
@@ -190,21 +203,78 @@ export function ProfileScreen({ user: propUser }: ProfileScreenProps) {
           transition={{ delay: 0.1 }}
           className="bg-card rounded-2xl p-5 shadow-sm border border-border/50"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-medium text-foreground">
-                  Time Availability
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {timeLabels[user.timeAvailability] || user.timeAvailability}
-                </p>
-              </div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#22c55e1a" }}>
+              <Clock className="w-5 h-5" style={{ color: "#22c55e" }} />
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            <div className="flex-1">
+              <h3 className="font-medium text-foreground">Time Availability</h3>
+              <p className="text-xs text-muted-foreground">Daily minutes for tasks</p>
+            </div>
+            <div className="rounded-xl px-3 py-1.5 text-center min-w-[64px]" style={{ background: "#22c55e1a" }}>
+              <span className="text-lg font-bold leading-none" style={{ color: "#22c55e" }}>{timeValue}</span>
+              <span className="text-[10px] block" style={{ color: "#16a34a" }}>min/day</span>
+            </div>
+          </div>
+
+          {/* Slider */}
+          <div className="px-1">
+            <style>{`
+              .time-slider {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 100%;
+                height: 6px;
+                border-radius: 9999px;
+                outline: none;
+                cursor: pointer;
+                background: linear-gradient(
+                  to right,
+                  #22c55e 0%,
+                  #22c55e ${sliderFillPct}%,
+                  hsl(var(--border)) ${sliderFillPct}%,
+                  hsl(var(--border)) 100%
+                );
+              }
+              .time-slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: #22c55e;
+                box-shadow: 0 0 0 3px hsl(var(--background)), 0 0 0 5px rgba(34,197,94,0.35);
+                cursor: pointer;
+                transition: box-shadow 0.15s ease;
+              }
+              .time-slider::-webkit-slider-thumb:hover {
+                box-shadow: 0 0 0 3px hsl(var(--background)), 0 0 0 8px rgba(34,197,94,0.25);
+              }
+              .time-slider::-moz-range-thumb {
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                border: none;
+                background: #22c55e;
+                box-shadow: 0 0 0 3px hsl(var(--background)), 0 0 0 5px rgba(34,197,94,0.35);
+                cursor: pointer;
+              }
+            `}</style>
+            <input
+              id="time-availability-slider"
+              type="range"
+              min={5}
+              max={60}
+              step={5}
+              value={timeValue}
+              onChange={(e) => handleTimeChange(Number(e.target.value))}
+              className="time-slider"
+              aria-label="Time availability in minutes per day"
+            />
+            <div className="flex justify-between mt-2">
+              <span className="text-xs text-muted-foreground">5 min</span>
+              <span className="text-xs text-muted-foreground">60 min</span>
+            </div>
           </div>
         </motion.div>
 
