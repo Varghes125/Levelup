@@ -7,7 +7,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Life OS - Your Personal Development System',
+  title: 'LevelUp - Your Personal Development System',
   description: 'A calm, intelligent coach that delivers progressive daily tasks for personal growth',
   generator: 'v0.app',
   icons: {
