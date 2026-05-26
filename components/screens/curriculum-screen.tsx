@@ -1,17 +1,33 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronRight, ArrowLeft } from "lucide-react";
+import { ChevronRight, ArrowLeft, Plus, Dumbbell, Users, Brain, Briefcase, Heart, Palette, Wallet, Leaf, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { getUserDomains, updateDomainPriority, getDomainById } from "@/lib/api";
-import type { Domain } from "@/lib/mock-data";
+import { getUserDomains, updateDomainPriority, getDomainById, addCustomDomain } from "@/lib/api";
+import type { Domain, DomainOption } from "@/lib/mock-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+const domainIcons: Record<string, React.ReactNode> = {
+  "Fitness": <Dumbbell className="w-6 h-6" />,
+  "Social Confidence": <Users className="w-6 h-6" />,
+  "Knowledge": <Brain className="w-6 h-6" />,
+  "Career": <Briefcase className="w-6 h-6" />,
+  "Emotional": <Heart className="w-6 h-6" />,
+  "Creativity": <Palette className="w-6 h-6" />,
+  "Finance": <Wallet className="w-6 h-6" />,
+  "Lifestyle": <Leaf className="w-6 h-6" />,
+};
 
 export function CurriculumScreen() {
   const [domains, setDomains] = useState<Domain[]>([]);
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAddDomain, setShowAddDomain] = useState(false);
+  const [newDomainName, setNewDomainName] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -53,6 +69,22 @@ export function CurriculumScreen() {
     }
   };
 
+  const handleAddCustomDomain = async () => {
+    if (!newDomainName.trim()) return;
+    try {
+      const result = await addCustomDomain({
+        name: newDomainName.trim(),
+        icon: "sparkles",
+      });
+      // In a real app, this would add the domain to the user's curriculum
+      console.log("[v0] Custom domain added:", result.domain);
+      setNewDomainName("");
+      setShowAddDomain(false);
+    } catch (error) {
+      console.error("[v0] Error adding custom domain:", error);
+    }
+  };
+
   if (isLoading) {
     return <CurriculumScreenSkeleton />;
   }
@@ -79,16 +111,72 @@ export function CurriculumScreen() {
       </header>
 
       <main className="px-5">
-        <div className="space-y-3">
-          {domains.map((domain) => (
-            <DomainCard
+        {/* Domain Grid */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          {domains.map((domain, index) => (
+            <motion.div
               key={domain.id}
-              domain={domain}
-              onSelect={() => handleSelectDomain(domain.id)}
-              onPriorityChange={handlePriorityChange}
-            />
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <DomainCard
+                domain={domain}
+                onSelect={() => handleSelectDomain(domain.id)}
+              />
+            </motion.div>
           ))}
         </div>
+
+        {/* Add Custom Domain */}
+        <AnimatePresence>
+          {!showAddDomain ? (
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onClick={() => setShowAddDomain(true)}
+              className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-border/50 hover:border-primary/50 transition-all text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="text-sm font-medium">Add Domain</span>
+            </motion.button>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-card rounded-2xl p-4 border border-border/50"
+            >
+              <Input
+                value={newDomainName}
+                onChange={(e) => setNewDomainName(e.target.value)}
+                placeholder="Domain name"
+                className="mb-3 rounded-xl"
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && handleAddCustomDomain()}
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleAddCustomDomain}
+                  disabled={!newDomainName.trim()}
+                  className="flex-1 rounded-xl"
+                >
+                  Add
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowAddDomain(false);
+                    setNewDomainName("");
+                  }}
+                  variant="outline"
+                  className="rounded-xl"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
@@ -97,58 +185,51 @@ export function CurriculumScreen() {
 function DomainCard({
   domain,
   onSelect,
-  onPriorityChange,
 }: {
   domain: Domain;
   onSelect: () => void;
-  onPriorityChange: (id: number, priority: "Low" | "Medium" | "High") => void;
 }) {
+  const icon = domainIcons[domain.name] || <Sparkles className="w-6 h-6" />;
+  
   return (
-    <div className="bg-card rounded-2xl p-5 shadow-sm border border-border/50">
-      <div className="flex items-start justify-between mb-3">
-        <button onClick={onSelect} className="text-left flex-1">
-          <h3 className="font-semibold text-foreground hover:text-primary transition-colors">
-            {domain.name}
-          </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Stage: {domain.stage}
-          </p>
-        </button>
-        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+    <button
+      onClick={onSelect}
+      className="w-full bg-card rounded-2xl p-4 shadow-sm border border-border/50 text-left transition-all hover:shadow-md hover:border-primary/20 active:scale-[0.98]"
+    >
+      {/* Icon */}
+      <div className={cn(
+        "w-12 h-12 rounded-xl flex items-center justify-center mb-3",
+        domain.priority === "High" && "bg-destructive/10 text-destructive",
+        domain.priority === "Medium" && "bg-warning/10 text-warning",
+        domain.priority === "Low" && "bg-primary/10 text-primary",
+      )}>
+        {icon}
       </div>
+
+      {/* Name */}
+      <h3 className="font-semibold text-foreground text-sm mb-1">
+        {domain.name}
+      </h3>
+
+      {/* Stage Badge */}
+      <span
+        className={cn(
+          "text-xs font-medium px-2 py-0.5 rounded-full inline-block mb-3",
+          domain.stage === "Foundation" && "bg-primary/10 text-primary",
+          domain.stage === "Skill" && "bg-warning/10 text-warning-foreground",
+          domain.stage === "Mastery" && "bg-success/10 text-success"
+        )}
+      >
+        {domain.stage}
+      </span>
 
       {/* Progress */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-          <span>Progress</span>
-          <span>{domain.progress}%</span>
-        </div>
-        <Progress value={domain.progress} className="h-2" />
+      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+        <span>Progress</span>
+        <span>{domain.progress}%</span>
       </div>
-
-      {/* Priority Selector */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground mr-2">Priority:</span>
-        {(["Low", "Medium", "High"] as const).map((priority) => (
-          <button
-            key={priority}
-            onClick={() => onPriorityChange(domain.id, priority)}
-            className={cn(
-              "text-xs font-medium px-3 py-1.5 rounded-full transition-all",
-              domain.priority === priority
-                ? priority === "High"
-                  ? "bg-destructive/10 text-destructive"
-                  : priority === "Medium"
-                  ? "bg-warning/10 text-warning-foreground"
-                  : "bg-muted text-muted-foreground"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted"
-            )}
-          >
-            {priority}
-          </button>
-        ))}
-      </div>
-    </div>
+      <Progress value={domain.progress} className="h-1.5" />
+    </button>
   );
 }
 
@@ -161,6 +242,8 @@ function DomainDetailView({
   onBack: () => void;
   onPriorityChange: (id: number, priority: "Low" | "Medium" | "High") => void;
 }) {
+  const icon = domainIcons[domain.name] || <Sparkles className="w-8 h-8" />;
+
   return (
     <div className="min-h-screen pb-24">
       <header className="px-5 pt-12 pb-6">
@@ -171,21 +254,34 @@ function DomainDetailView({
           <ArrowLeft className="w-5 h-5 mr-1" />
           Back
         </button>
-        <h1 className="text-2xl font-bold text-foreground">{domain.name}</h1>
-        <div className="flex items-center gap-2 mt-2">
-          <span
-            className={cn(
-              "text-xs font-medium px-2.5 py-1 rounded-full",
-              domain.stage === "Foundation" && "bg-primary/10 text-primary",
-              domain.stage === "Skill" && "bg-warning/10 text-warning-foreground",
-              domain.stage === "Mastery" && "bg-success/10 text-success"
-            )}
-          >
-            {domain.stage}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            {domain.progress}% complete
-          </span>
+        
+        <div className="flex items-start gap-4">
+          <div className={cn(
+            "w-14 h-14 rounded-xl flex items-center justify-center",
+            domain.priority === "High" && "bg-destructive/10 text-destructive",
+            domain.priority === "Medium" && "bg-warning/10 text-warning",
+            domain.priority === "Low" && "bg-primary/10 text-primary",
+          )}>
+            {icon}
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">{domain.name}</h1>
+            <div className="flex items-center gap-2 mt-2">
+              <span
+                className={cn(
+                  "text-xs font-medium px-2.5 py-1 rounded-full",
+                  domain.stage === "Foundation" && "bg-primary/10 text-primary",
+                  domain.stage === "Skill" && "bg-warning/10 text-warning-foreground",
+                  domain.stage === "Mastery" && "bg-success/10 text-success"
+                )}
+              >
+                {domain.stage}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {domain.progress}% complete
+              </span>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -307,10 +403,11 @@ function CurriculumScreenSkeleton() {
         <Skeleton className="h-4 w-48" />
       </header>
       <main className="px-5">
-        <div className="space-y-3">
-          <Skeleton className="h-40 w-full rounded-2xl" />
-          <Skeleton className="h-40 w-full rounded-2xl" />
-          <Skeleton className="h-40 w-full rounded-2xl" />
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-44 w-full rounded-2xl" />
+          <Skeleton className="h-44 w-full rounded-2xl" />
+          <Skeleton className="h-44 w-full rounded-2xl" />
+          <Skeleton className="h-44 w-full rounded-2xl" />
         </div>
       </main>
     </div>

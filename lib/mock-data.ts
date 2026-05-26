@@ -8,12 +8,23 @@
 export interface User {
   id: string;
   name: string;
-  timeAvailability: string;
+  timeAvailability: "5min" | "10min" | "15min";
   streak: number;
+  xp: number;
+  level: number;
+  onboardingComplete: boolean;
+  selectedDomains: string[];
   preferences: {
     notificationsEnabled: boolean;
     darkMode: boolean;
   };
+}
+
+export interface DomainOption {
+  id: string;
+  name: string;
+  icon: string;
+  custom?: boolean;
 }
 
 export interface Domain {
@@ -70,14 +81,31 @@ export interface Task {
   why: string;
   how: string[];
   sessionProgress?: string;
+  xpReward: number;
 }
+
+// Available Domain Options for Onboarding
+export const availableDomains: DomainOption[] = [
+  { id: "fitness", name: "Fitness", icon: "dumbbell" },
+  { id: "social", name: "Social", icon: "users" },
+  { id: "knowledge", name: "Knowledge", icon: "brain" },
+  { id: "career", name: "Career", icon: "briefcase" },
+  { id: "emotional", name: "Emotional", icon: "heart" },
+  { id: "creativity", name: "Creativity", icon: "palette" },
+  { id: "finance", name: "Finance", icon: "wallet" },
+  { id: "lifestyle", name: "Lifestyle", icon: "leaf" },
+];
 
 // Mock User Data
 export const mockUser: User = {
   id: "user_1",
   name: "Haifa",
-  timeAvailability: "5-10 mins/day",
+  timeAvailability: "10min",
   streak: 7,
+  xp: 120,
+  level: 2,
+  onboardingComplete: true,
+  selectedDomains: ["fitness", "social", "knowledge", "creativity"],
   preferences: {
     notificationsEnabled: true,
     darkMode: false,
@@ -245,11 +273,12 @@ export const mockTodayTasks: Task[] = [
     id: 1,
     type: "life",
     domain: "Social Confidence",
-    title: "Spend 5 minutes sitting alone in a café observing people",
+    title: "Spend 5 minutes sitting alone in a cafe observing people",
     time: "5 min",
+    xpReward: 10,
     why: "Low-pressure exposure reduces social anxiety over time. By simply being present in a social environment without the pressure to interact, you build comfort and familiarity with public spaces.",
     how: [
-      "Find a quiet café or public place",
+      "Find a quiet cafe or public place",
       "Order something simple if you'd like",
       "Sit alone without using your phone",
       "Observe your surroundings calmly",
@@ -263,7 +292,8 @@ export const mockTodayTasks: Task[] = [
     pathwayTitle: "Cooking Basics",
     title: "Cook a simple dish: scrambled eggs with one seasoning",
     time: "10 min",
-    why: "Mastering simple dishes builds confidence and muscle memory. Scrambled eggs teach you heat control and timing—fundamental skills for any cooking.",
+    xpReward: 15,
+    why: "Mastering simple dishes builds confidence and muscle memory. Scrambled eggs teach you heat control and timing - fundamental skills for any cooking.",
     how: [
       "Gather: 2 eggs, butter, salt, and one herb (try chives or parsley)",
       "Crack eggs into a bowl and whisk gently",
@@ -275,3 +305,15 @@ export const mockTodayTasks: Task[] = [
     sessionProgress: "5/21",
   },
 ];
+
+// General Growth Pathway (always active)
+export const generalGrowthPathway: Pathway = {
+  id: 0,
+  title: "General Growth",
+  totalSessions: 0,
+  currentSession: 0,
+  description: "Your balanced path across all selected domains. Tasks are intelligently distributed to ensure holistic growth.",
+  active: true,
+  difficulty: "Beginner",
+  sessions: [],
+};

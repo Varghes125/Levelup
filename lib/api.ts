@@ -20,10 +20,13 @@ import {
   mockDomains,
   mockPathways,
   mockTodayTasks,
+  availableDomains,
+  generalGrowthPathway,
   type User,
   type Domain,
   type Pathway,
   type Task,
+  type DomainOption,
 } from "./mock-data";
 
 // Simulate network delay for realistic UX
@@ -108,12 +111,13 @@ export async function swapTask(taskId: number): Promise<Task> {
     domain: "Social Confidence",
     title: "Make eye contact and smile at one person during your day",
     time: "1 min",
+    xpReward: 10,
     why: "Brief positive social interactions boost confidence and create micro-connections that reduce social anxiety.",
     how: [
       "Choose a low-stakes moment (coffee shop, grocery store)",
       "When passing someone, make brief eye contact",
       "Offer a genuine, small smile",
-      "Continue with your day—no conversation needed",
+      "Continue with your day - no conversation needed",
     ],
   };
 }
@@ -131,6 +135,7 @@ export async function getEasierTask(taskId: number): Promise<Task> {
     domain: "Social Confidence",
     title: "Sit near a window at home and watch people pass by for 3 minutes",
     time: "3 min",
+    xpReward: 5,
     why: "Sometimes we need to ease into social exposure. Observing from a safe space still builds awareness and comfort.",
     how: [
       "Find a comfortable spot near a window",
@@ -176,4 +181,95 @@ export async function updateUserPreferences(
   await delay(300);
   console.log(`[API] Updated user preferences:`, preferences);
   return { success: true };
+}
+
+/**
+ * Get available domain options for onboarding
+ * Replace this mock function with backend API call: GET /api/domains/available
+ */
+export async function getAvailableDomains(): Promise<DomainOption[]> {
+  await delay(200);
+  return availableDomains;
+}
+
+/**
+ * Get the General Growth pathway (always active)
+ * Replace this mock function with backend API call: GET /api/pathways/general
+ */
+export async function getGeneralGrowthPathway(): Promise<Pathway> {
+  await delay(200);
+  return generalGrowthPathway;
+}
+
+/**
+ * Complete onboarding and save user preferences
+ * Replace this mock function with backend API call: POST /api/user/onboarding
+ */
+export async function completeOnboarding(data: {
+  name: string;
+  selectedDomains: string[];
+  timeAvailability: "5min" | "10min" | "15min";
+}): Promise<{ success: boolean; user: User }> {
+  await delay(500);
+  console.log(`[API] Completing onboarding:`, data);
+  const updatedUser: User = {
+    ...mockUser,
+    name: data.name,
+    selectedDomains: data.selectedDomains,
+    timeAvailability: data.timeAvailability,
+    onboardingComplete: true,
+  };
+  return { success: true, user: updatedUser };
+}
+
+/**
+ * Add a custom domain
+ * Replace this mock function with backend API call: POST /api/domains/custom
+ */
+export async function addCustomDomain(domain: {
+  name: string;
+  icon: string;
+}): Promise<{ success: boolean; domain: DomainOption }> {
+  await delay(300);
+  console.log(`[API] Adding custom domain:`, domain);
+  const newDomain: DomainOption = {
+    id: domain.name.toLowerCase().replace(/\s+/g, "-"),
+    name: domain.name,
+    icon: domain.icon,
+    custom: true,
+  };
+  return { success: true, domain: newDomain };
+}
+
+/**
+ * Award XP to user after task completion
+ * Replace this mock function with backend API call: POST /api/user/xp
+ */
+export async function awardXP(xpAmount: number): Promise<{ 
+  success: boolean; 
+  newXP: number; 
+  newLevel: number;
+  levelUp: boolean;
+}> {
+  await delay(200);
+  const newXP = mockUser.xp + xpAmount;
+  const xpPerLevel = 100;
+  const newLevel = Math.floor(newXP / xpPerLevel) + 1;
+  const levelUp = newLevel > mockUser.level;
+  console.log(`[API] Awarded ${xpAmount} XP. New total: ${newXP}, Level: ${newLevel}`);
+  return { success: true, newXP, newLevel, levelUp };
+}
+
+/**
+ * Update user streak
+ * Replace this mock function with backend API call: PATCH /api/user/streak
+ */
+export async function updateStreak(): Promise<{ 
+  success: boolean; 
+  newStreak: number 
+}> {
+  await delay(200);
+  const newStreak = mockUser.streak + 1;
+  console.log(`[API] Updated streak to ${newStreak}`);
+  return { success: true, newStreak };
 }

@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Check, RefreshCw, Zap, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, RefreshCw, Zap, ChevronDown, ChevronUp, Clock, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { Task } from "@/lib/mock-data";
 
 interface TaskCardProps {
   task: Task;
-  onComplete: (taskId: number) => void;
+  onComplete: (taskId: number, xpReward: number) => void;
   onSwap: (taskId: number) => void;
   onEasier: (taskId: number) => void;
   isCompleting?: boolean;
@@ -29,13 +30,17 @@ export function TaskCard({
 
   const handleComplete = () => {
     setIsCompleted(true);
-    onComplete(task.id);
+    onComplete(task.id, task.xpReward);
   };
 
   const isLifeTask = task.type === "life";
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      whileTap={{ scale: 0.995 }}
       className={cn(
         "bg-card rounded-2xl p-5 shadow-sm border border-border/50 transition-all duration-300",
         isCompleted && "opacity-60 scale-[0.98]"
@@ -60,9 +65,16 @@ export function TaskCard({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Clock className="w-3.5 h-3.5" />
-          <span className="text-xs font-medium">{task.time}</span>
+        <div className="flex items-center gap-3">
+          {/* XP Badge */}
+          <div className="flex items-center gap-1 text-primary">
+            <Star className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold">+{task.xpReward} XP</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Clock className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">{task.time}</span>
+          </div>
         </div>
       </div>
 
@@ -90,13 +102,23 @@ export function TaskCard({
             <ChevronDown className="w-4 h-4" />
           )}
         </button>
-        {showWhy && (
-          <div className="px-3 py-3 bg-muted/30 rounded-xl">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {task.why}
-            </p>
-          </div>
-        )}
+        <AnimatePresence>
+          {showWhy && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="px-3 py-3 bg-muted/30 rounded-xl">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {task.why}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* How Section */}
         <button
@@ -110,20 +132,30 @@ export function TaskCard({
             <ChevronDown className="w-4 h-4" />
           )}
         </button>
-        {showHow && (
-          <div className="px-3 py-3 bg-muted/30 rounded-xl">
-            <ol className="space-y-2">
-              {task.how.map((step, index) => (
-                <li key={index} className="flex gap-3 text-sm text-muted-foreground">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">
-                    {index + 1}
-                  </span>
-                  <span className="leading-relaxed">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
+        <AnimatePresence>
+          {showHow && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="px-3 py-3 bg-muted/30 rounded-xl">
+                <ol className="space-y-2">
+                  {task.how.map((step, index) => (
+                    <li key={index} className="flex gap-3 text-sm text-muted-foreground">
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">
+                        {index + 1}
+                      </span>
+                      <span className="leading-relaxed">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Action Buttons */}
@@ -131,10 +163,23 @@ export function TaskCard({
         <Button
           onClick={handleComplete}
           disabled={isCompleting || isCompleted}
-          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-11 font-medium"
+          className={cn(
+            "flex-1 rounded-xl h-11 font-medium transition-all",
+            isCompleted
+              ? "bg-success hover:bg-success text-success-foreground"
+              : "bg-primary hover:bg-primary/90 text-primary-foreground"
+          )}
         >
           {isCompleting ? (
             <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+          ) : isCompleted ? (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", damping: 10 }}
+            >
+              <Check className="w-4 h-4 mr-2" />
+            </motion.div>
           ) : (
             <Check className="w-4 h-4 mr-2" />
           )}
@@ -144,7 +189,7 @@ export function TaskCard({
           onClick={() => onSwap(task.id)}
           disabled={isSwapping || isCompleted}
           variant="outline"
-          className="rounded-xl h-11 px-4"
+          className="rounded-xl h-11 px-4 hover:bg-muted/50"
           title="Get a different task"
         >
           <RefreshCw className={cn("w-4 h-4", isSwapping && "animate-spin")} />
@@ -153,12 +198,12 @@ export function TaskCard({
           onClick={() => onEasier(task.id)}
           disabled={isCompleted}
           variant="outline"
-          className="rounded-xl h-11 px-4"
+          className="rounded-xl h-11 px-4 hover:bg-muted/50"
           title="Get an easier version"
         >
           <Zap className="w-4 h-4" />
         </Button>
       </div>
-    </div>
+    </motion.div>
   );
 }
